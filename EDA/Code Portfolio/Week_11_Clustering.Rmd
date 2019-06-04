@@ -36,7 +36,7 @@ distance <- get_dist(df)  # distance matrix between the rows of a data matrix
 fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07")) # It performs principle component analysis and Visualization of distance matrix
 ```
 
-## Kemans clustering
+## Kmeans clustering
 ```{r}
 k2 <- kmeans(df, centers = 2, nstart = 25)
 str(k2) 
