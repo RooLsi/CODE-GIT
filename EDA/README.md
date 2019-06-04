@@ -1,4 +1,4 @@
-# Repository For Weekly Code Practice and the final Project
+# Repository for Weekly Code Practice and the final Project
 
 This repository is a collection of weekly code practice and figures used in final project. The objective of this repository to store everything for a final project for ANLY506-Exploratory Data Analytics.
 This folder will be updated as and when project progresses
