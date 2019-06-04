@@ -1,0 +1,184 @@
+---
+title: "Week_11_Clustering"
+author: "Roli"
+date: "June 4, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## including libraries
+```{r}
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering algorithms & visualization
+library(dendextend) # for comparing two dendrograms
+library(NbClust)
+library (cluster)
+library (clustertend)
+library (factoextra)
+library(gridExtra)
+```
+
+## Load Data
+```{r}
+df <- USArrests # read USArrests data 
+df <- na.omit(df) #Remove any missing values
+df <- scale(df)
+head(df)
+```
+
+
+```{r}
+distance <- get_dist(df)  # distance matrix between the rows of a data matrix
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07")) # It performs principle component analysis and Visualization of distance matrix
+```
+
+## Kemans clustering
+```{r}
+k2 <- kmeans(df, centers = 2, nstart = 25)
+str(k2) 
+fviz_cluster(k2, data = df)
+```
+
+## Pairwise scatter plot
+
+```{r}
+df %>%
+  as_tibble() %>%
+  mutate(cluster = k2$cluster,
+         state = row.names(USArrests)) %>%
+  ggplot(aes(UrbanPop, Murder, color = factor(cluster), label = state)) +
+  geom_text()
+```
+
+## Comparision plots
+
+
+```{r}
+k3 <- kmeans(df, centers = 3, nstart = 25)
+k4 <- kmeans(df, centers = 4, nstart = 25)
+k5 <- kmeans(df, centers = 5, nstart = 25)
+p1 <- fviz_cluster(k2, geom = "point", data = df) + ggtitle("k = 2")
+p2 <- fviz_cluster(k3, geom = "point",  data = df) + ggtitle("k = 3")
+p3 <- fviz_cluster(k4, geom = "point",  data = df) + ggtitle("k = 4")
+p4 <- fviz_cluster(k5, geom = "point",  data = df) + ggtitle("k = 5")
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+```
+
+## Hierarchical Clustering
+```{r}
+df <- USArrests
+df <- scale(df)
+```
+
+## Agglomerative Hierarchical Clustering
+```{r}
+# Dissimilarity matrix
+d <- dist(df, method = "euclidean")
+
+# Hierarchical clustering using Complete Linkage
+hc1 <- hclust(d, method = "complete" )
+
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+
+# Compute with agnes
+hc2 <- agnes(df, method = "complete")
+
+# Agglomerative coefficient
+hc2$ac
+## [1] 0.8531583
+
+# methods to assess
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+
+# function to compute coefficient
+ac <- function(x) {
+  agnes(df, method = x)$ac
+}
+
+map_dbl(m, ac)
+##   average    single  complete      ward 
+## 0.7379371 0.6276128 0.8531583 0.9346210
+```
+
+## visualize the dendrogram 
+```{r}
+hc3 <- agnes(df, method = "ward")
+pltree(hc3, cex = 0.6, hang = -1, main = "Dendrogram of agnes") 
+```
+
+## Divisive Hierarchical Clustering
+```{r}
+# compute divisive hierarchical clustering
+hc4 <- diana(df)
+
+# Divise coefficient; amount of clustering structure found
+hc4$dc
+## [1] 0.8514345
+
+# plot dendrogram
+pltree(hc4, cex = 0.6, hang = -1, main = "Dendrogram of diana")
+
+# Ward's method
+hc5 <- hclust(d, method = "ward.D2" )
+
+# Cut tree into 4 groups
+sub_grp <- cutree(hc5, k = 4)
+
+# Number of members in each cluster
+table(sub_grp)
+## sub_grp
+##  1  2  3  4 
+##  7 12 19 12
+
+USArrests %>%
+  mutate(cluster = sub_grp) %>%
+  head
+
+plot(hc5, cex = 0.6)
+rect.hclust(hc5, k = 4, border = 2:5)
+
+fviz_cluster(list(data = df, cluster = sub_grp))
+
+# Cut agnes() tree into 4 groups
+hc_a <- agnes(df, method = "ward")
+cutree(as.hclust(hc_a), k = 4)
+
+# Cut diana() tree into 4 groups
+hc_d <- diana(df)
+cutree(as.hclust(hc_d), k = 4)
+
+# Compute distance matrix
+res.dist <- dist(df, method = "euclidean")
+
+# Compute 2 hierarchical clusterings
+hc1 <- hclust(res.dist, method = "complete")
+hc2 <- hclust(res.dist, method = "ward.D2")
+
+# Create two dendrograms
+dend1 <- as.dendrogram (hc1)
+dend2 <- as.dendrogram (hc2)
+
+tanglegram(dend1, dend2)
+```
+
+## Determining Optimal Clusters 1.Elbow Method
+```{r}
+fviz_nbclust(df, FUN = hcut, method = "wss")
+```
+
+# 2.Average Silhouette Method
+```{r}
+fviz_nbclust(df, FUN = hcut, method = "silhouette")
+```
+
+# 3.Gap Statistic Method
+```{r}
+gap_stat <- clusGap(df, FUN = hcut, nstart = 25, K.max = 10, B = 50)
+fviz_gap_stat(gap_stat)
+```

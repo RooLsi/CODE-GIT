@@ -1,0 +1,218 @@
+---
+title: "Data transformation part 1"
+author: "Roli"
+date: "April 22, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("nycflights13")
+```
+
+# 11.2 Getting Started
+```{r}
+# Read a supplied file
+heights <- read_csv("data/heights.csv")
+# Create an inline csv
+read_csv(
+  "a,b,c
+   1,2,3
+   4,5,6")
+# Ignore metadata
+read_csv(
+  "metadata line 1
+   metadata line 2
+   x,y,z
+   1,2,3", skip = 2
+)
+# Ignore comments
+read_csv(
+  "# comment we should ignore
+   x,y,z
+   1,2,3", comment = "#"
+)
+# File has no column names
+read_csv(
+  "1,2,3
+   4,5,6", col_names = FALSE
+)
+# Want to supply your own column names
+read_csv(
+  "1,2,3
+   4,5,6", col_names = c("x", "y", "z")
+)
+# If missing values are specified in the file
+read_csv(
+  "a,b,c
+   1,2,.", na = "."
+)
+```
+
+# 11.2.2 Exercises
+```{r}
+# 4
+# How would you read this?
+strn <- "x,y\n1,'a,b'"
+read_csv(strn, quote = "'")
+# 5
+read_csv("a,b\n1,2,3\n4,5,6")
+read_csv("a,b,c\n1,2\n1,2,3,4")
+read_csv("a,b\n\"1")
+read_csv("a;b\n1;3")
+```
+
+# 11.3 Parsing a vector
+```{r}
+str(parse_logical(c("TRUE", "FALSE", "NA")))
+str(parse_integer(c("1", "2", "3")))
+str(parse_date(c("2010-01-01", "1979-10-14")))
+parse_integer(c("1", "231", ".", "456"), na = ".")
+# Parsing failure
+x <- parse_integer(c("123", "345", "abc", "123.45"))
+x
+problems(x)
+```
+
+# 11.3.1 Numbers
+```{r}
+parse_double("1.23")
+parse_double("1,23", locale = locale(decimal_mark = ","))
+# Ignore non-numeric characters before & after numbers
+parse_number("$100")
+parse_number("20%")
+parse_number("It cost $123.45")
+# Ignore grouping marks
+parse_number("$123,456,789")
+parse_number("123.456.789", locale = locale(grouping_mark = "."))
+parse_number("123'456'789", locale = locale(grouping_mark = "'"))
+# This DOESN'T work
+parse_number("123, 456, 789", locale = locale(grouping_mark = ", "))
+```
+
+# 11.3.2 Strings
+```{r}
+charToRaw("Carson")
+x1 <- "El Ni\xf1o was particularly bad this year."
+x2 <- "\x82\xb1\x82\xf1\x82\xc9\x82\xbf\x82\xcd"
+# Prints fine on my system, but may be gibberish elsewhere
+x1
+x2
+parse_character(x1, locale = locale(encoding = "Latin1"))
+parse_character(x2, locale = locale(encoding = "Shift-JIS"))
+# When all else fails, try to guess
+guess_encoding(charToRaw(x1))
+guess_encoding(charToRaw(x2))
+```
+
+# 11.3.3 Factors
+```{r}
+fruit <- c("apple", "banana")
+parse_factor(c("apple", "banana", "bananana"), levels = fruit)
+```
+
+# 11.3.4 Dates, date-times, and times
+```{r}
+parse_datetime("2010-10-01T2010")
+parse_datetime("20101010")
+parse_date("2010-10-01")
+parse_time("01:10 am")
+parse_time("20:10:01")
+parse_date("01/02/15", "%m/%d/%y")
+parse_date("01/02/15", "%d/%m/%y")
+parse_date("01/02/15", "%y/%m/%d")
+parse_date("1 janvier 2015", "%d %B %Y", locale = locale("fr"))
+```
+
+# 11.3.5 Exercises
+```{r}
+# 2
+# the below will throw an error
+# locale(decimal_mark = ".", grouping_mark = ".")
+locale(decimal_mark = ",")
+locale(grouping_mark = ",")
+# 3
+parse_date("1 janvier 2015", "%d %B %Y", locale = locale("fr"))
+parse_date("14 oct. 1979", "%d %b %Y", locale = locale("fr"))
+# 4
+# create a new locale object
+rando_locale <- locale(date_format = "%Y~%m~%d")
+parse_date("2018~12~17", locale = rando_locale)
+# 7
+d1 <- "January 1, 2010"
+d2 <- "2015-Mar-07"
+d3 <- "06-Jun-2017"
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+d5 <- "12/30/14" # Dec 30, 2014
+t1 <- "1705"
+t2 <- "11:15:10.12 PM"
+parse_date(d1, "%B %d, %Y")
+parse_date(d2, "%Y-%b-%d")
+parse_date(d3, "%d-%b-%Y")
+parse_date(d4, "%B %d (%Y)")
+parse_date(d5, "%m/%d/%y")
+parse_time(t1, "%H%M")
+parse_time(t2, "%H:%M:%OS %p")
+```
+
+# 11.4 Parsing a File
+# 11.4.1 Strategy
+```{r}
+guess_parser("2010-10-01")
+guess_parser("15:01")
+guess_parser(c("TRUE", "FALSE"))
+guess_parser(c("1", "5", "9"))
+guess_parser(c("12,352,561"))
+str(parse_guess("2010-10-10"))
+```
+
+# 11.4.2
+```{r}
+challenge <- read_csv(readr_example("challenge.csv"))
+problems(challenge)
+# Make sure rows are being interpreted correctly
+challenge <- read_csv(
+  readr_example("challenge.csv"),
+  col_types = cols(
+    x = col_double(),
+    y = col_character()
+  )
+)
+# Check the last few rows
+tail(challenge)
+# Convert y to a date column
+challenge <- read_csv(
+  readr_example("challenge.csv"),
+  col_types = cols(
+    x = col_double(),
+    y = col_date()
+  )
+)
+tail(challenge)
+```
+
+# 11.4.3
+```{r}
+# Getting some NA values
+(challenge2 <- read_csv(readr_example("challenge.csv"), guess_max = 1001))
+(challenge2 <- read_csv(readr_example("challenge.csv"),
+                        col_types = cols(.default = col_character())))
+(df <- tribble(
+  ~x, ~y,
+  "1", "1.21",
+  "2", "2.32",
+  "3", "4.56"
+))
+type_convert(df)
+```
+
+# 11.5 Writing to a file
+```{r}
+write_csv(challenge, "data/challenge.csv")
+# Will lose data typing (i.e. dates)
+read_csv("data/challenge.csv")
+# Can use .RDS to solve this
+write_rds(challenge, "data/challenge.rds")
+read_rds("data/challenge.rds")
+# Can also use the feather binary file format
+```
