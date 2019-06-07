@@ -12,7 +12,7 @@ This folder will be updated as and when project progresses
 * Clustering Week 11
 
 
-## Final Project
+## Final Project - Gapminder
 
 ## Data Description
 
