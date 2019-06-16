@@ -1,0 +1,530 @@
+---
+title: "Project GapMinder"
+author: "Roli"
+date: "June 12, 2019"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+In this Exploratory data analysis assignment, the Gapminder Dataset is used for analysis. 
+In Data Description (description of each variables). 
+In Data exploration section it is regionwise life expectancy and visualization (boxplots, histograms) of the different variables present in the data. 
+We will be omiting missing values and applying clustering.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(tinytex)
+library(data.table)
+library(dplyr)
+```
+
+```{r include=FALSE} 
+#Reading data
+gapminder <- read.csv("C:/MyData Late-Spring/506/Project/My Project/gapminder.csv")
+```
+###  1. QUESTIONS :
+*  1.1 Find the high-income countries with the lowest life expectancy?
+*  1.2 Find the three countries with the longest life expectancies and United States?
+*  1.3 Find the Life expectancy by region?
+*  1.4 Find the High income countries with low life expectancies?
+*  1.5 what is the Life Expectancy over years?
+*  1.6 For the year 2015, what are the top three countries with the largest income?
+*  1.7 What was the percent growth (or decline) in income in 2015 for the United States?
+*  1.8 income vs year for United States?
+
+###  2. Data Description:
+GapMinder is the dataset which has income across the countries collected over years dating 1800 to 2015
+
+Following are the variables in the dataset:
+
+1. Country : Names of the countries and is a Factor w/ 197 levels
+2. Year : year for which this observation is collected is int
+3. Life : Life Expectency for people in that country is num
+4. population : Population of country is Factor w/ 15260 levels
+5. income : It is the Income of that country is int
+6. region : continent of that country is Factor w/ 6 levels
+
+
+```{r include=FALSE}
+colnames(gapminder)
+records <- nrow(gapminder)  #Find number of rows
+ncol(gapminder)  #Find number of columns
+str(gapminder)   #Data type of each column
+head(gapminder)  #Top 6 rows
+tail(gapminder)  #Bottom 6 rows
+```
+
+*  the number observations is `r records`
+*  the number of variables are  `r ncol(gapminder)`
+*  types of variables 
+         1. Country : is a Factor w/ 197 levels
+         2. Year : is int
+         3. Life : is num
+         4. population : is Factor w/ 15260 levels
+         5. income : is int
+         6. region : is Factor w/ 6 levels
+
+###  Summary of gapminder
+```{r include=FALSE}
+summary(gapminder)
+```
+### 3. Data Exploration:
+
+Data summary statistics
+
+3.1) Mean and Median of life expectancy Region wise
+
+```{r include=FALSE}
+aggregate(life ~ region, gapminder, median)
+aggregate(life ~ region, gapminder, mean)
+```
+*  Europe & Central Asia	life mean is 41.74110	
+*  America	life mean is 35.37370	
+*  Europe & Central Asia	median is 48.79419
+*  America	life median 44.54065
+
+3.2) Five Num Summary Life Expectancy Region wise
+
+```{r include=FALSE}
+SouthAsia=filter(gapminder, region=="South Asia")
+fivenum(SouthAsia$life)
+fivenum(SouthAsia$population)
+fivenum(SouthAsia$income)
+EastAsiaPacific = filter(gapminder,region=="East Asia & Pacific")
+fivenum(EastAsiaPacific$life)
+fivenum(EastAsiaPacific$population)
+fivenum(EastAsiaPacific$income)
+EuropeCentralAsia=filter(gapminder,region=="Europe & Central Asia")
+fivenum(EuropeCentralAsia$life)
+fivenum(EuropeCentralAsia$population)
+fivenum(EuropeCentralAsia$income)
+MiddleEastNorthAfrica = filter(gapminder,region=="Middle East & North Africa")
+fivenum(MiddleEastNorthAfrica$life)
+fivenum(MiddleEastNorthAfrica$population)
+fivenum(MiddleEastNorthAfrica$income)
+America =filter(gapminder,region=="America")
+fivenum(America$life)
+fivenum(America$population)
+fivenum(America$income)
+SubSaharanAfrica = filter(gapminder,region=="Sub-Saharan Africa")
+fivenum(SubSaharanAfrica$life)
+fivenum(SubSaharanAfrica$population)
+fivenum(SubSaharanAfrica$income)
+```
+
+
+
+```{r include=FALSE}
+#Before proceeding we must convert population to integer
+gapminder$population <- as.integer(gapminder$population)
+str(gapminder)
+```
+
+
+
+```{r include=FALSE}
+#filter & sort data
+library(dplyr)
+library (factoextra)
+```
+
+
+```{r include=FALSE}
+#filter data for 2015 only
+longevity <- gapminder %>%
+filter(Year == 2015 & !is.na(life)) %>%
+select(Country, life, income, region)
+```
+
+```{r include=FALSE}
+#longetvity data structure
+str(longevity)
+```
+
+```{r include=FALSE}
+# find the twenty high-income countries with the lowest life expectancy
+high_income_short_life <- longevity %>%
+arrange(desc(income)) %>%
+arrange(life) %>%
+head(10)
+```
+Q.Find the three high-income countries with the lowest life expectancy
+
+Ans.We found that three high-income countries with the lowest life expectancy were 
+
+*  Lesotho life as 48.50, income as 2598, region as Sub-Saharan Africa
+*  Swaziland life as 51.50,  income as 6095, region as Sub-Saharan Africa
+*  Guinea-Bissau life as 53.40,income as 1386, region as Sub-Saharan Africa
+
+```{r include=FALSE}
+head(high_income_short_life)
+```
+Q.Find the 3 countries with the longest life expectancies and United States
+```{r include=FALSE}
+# Find the 20 countries with the longest life expectancies and United States with its rank, if it lies outside the top 20
+long_life <- longevity %>%
+  arrange(desc(life)) %>%
+  mutate(rank = c(1:178)) %>%
+  filter(rank <= 10 | Country == "United States")
+```
+*  Andorra life as 84.1, income as 46577, region Europe & Central Asia, rank 1,
+*  Japan life 83.5,income as 36162, region East Asia & Pacific, rank 2,
+*  Switzerland life 82.9, income as 56118, region Europe & Central Asia, rank 3,
+*  and lastly for United States life 79.1, income as 53354, region America, rank 36
+
+```{r include=FALSE}
+long_life
+```
+
+```{r echo=FALSE}
+#summary for longevity
+longevity_summary <- gapminder %>%
+  filter(!is.na(life)) %>%
+  group_by(Year) %>%
+  summarize(Country = n(),
+            max_life_expect = max(life),
+            min_life_expect = min(life)) %>%
+  mutate(range_life_expect = max_life_expect - min_life_expect) %>%
+  arrange(desc(Year))
+```
+
+Longevity Summary
+```{r include=FALSE}
+longevity_summary
+```
+
+### 4. Data Visualization:
+
+```{r include=FALSE}
+library(ggplot2)
+```
+
+4.1 Boxplot of life expectancy by region
+```{r, echo=FALSE}
+#making boxplot for the life expectancy by region
+ggplot(gapminder, aes(x = region, y = life)) +  geom_boxplot(outlier.colour = "red") 
+
+
+```
+
+*  Some interesting observations: Europe is substantially higher than all continents. Asia is also VERY spread out with a few countries at the top of our distribution.
+it is seen that Europe and Central Asia's life expectancy is substantially higher than all continents. Asia is also VERY spread out with a few countries at the top of our distribution.
+
+
+4.2 Histogram of life expectancy by region
+
+
+```{r, echo=FALSE}
+# making histograms for region wise.
+par(mfrow=c(2,3))
+hist(America$life,xlab="America Life",main="America life")
+hist(EastAsiaPacific$life ,xlab="EastAsiaPacific Life" ,main="EastAsiaPacific life")
+hist(EuropeCentralAsia$life,xlab="EuropeCentralAsia Life",main="EuropeCentralAsia life")
+hist(MiddleEastNorthAfrica$life,xlab="(MiddleEastNorthAfrica Life",main="MiddleEastNorthAfrica life")
+hist(SouthAsia$life,xlab="SouthAsia Life",main="SouthAsia life")
+hist(SubSaharanAfrica$life,xlab="SubSaharanAfrica Life",main="SubSaharanAfrica life")
+```
+
+### High income countries with low life expectancies
+
+```{r echo=FALSE}
+#making ggplot for High income countries with lower life expectancy
+ggplot(high_income_short_life, aes(x=Country, y=life)) +
+  geom_bar(stat="identity", fill = "blue", alpha = 0.7) +
+  xlab("") +
+  ylab("Life expectancy at birth (2015)") + 
+  ggtitle("High income countries with low life expectancies") +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  coord_flip()
+```
+
+```{r include=FALSE}
+j_country <- "France" # pick, but do not hard wire, an example
+(j_dat <- gapminder %>% 
+  filter(Country == j_country))
+```
+
+
+```{r include=FALSE}
+str(gapminder)
+```
+
+Life Expectancy over years
+```{r echo=FALSE}
+p <- ggplot(j_dat, aes(x = Year, y = life))
+p + geom_point() + geom_smooth(method = "lm", se = FALSE) + xlab("Year") +
+  ylab("Life Expectancy")
+```
+
+* This diagram shows Life Expectancy by Year
+
+```{r echo=FALSE}
+p <- ggplot(j_dat, aes(x = Year, y = income))
+p + geom_point() + geom_smooth(method = "lm", se = FALSE) + xlab("Year") +
+  ylab("income")
+
+# Life expectancy improved over year especially after 1950.
+```
+```{r include=FALSE}
+#For the year 2015, what are the top 3 countries with the largest income?
+gap2015 <- gapminder %>% filter(Year == 2015)
+gap2015 %>% arrange(-income) %>% head(10) %>% select(Country, income)
+```
+Q.For the year 2015, what are the top 3 countries with the largest income?
+
+* Ans .were Qatar with income as 132877,
+Luxembourg with income as 88314,
+Kuwait with income as 82633
+
+Q.What was the percent growth (or decline) in income in 2015 for the top 3 countries with largest income?
+
+Ans.	Kuwait	income was 82633, and percent growth is 44.30318	
+Singapore	income was 80794,and percent growth	is 37.75012,	
+Malaysia income was	24320	and percent growth	is 29.43805	
+```{r include=FALSE}
+gapminder %>% filter(Year == 2015) %>%  mutate(PercentGrowth =
+                  (income - lag(income))/lag(income)) %>% 
+  arrange(-PercentGrowth) %>% head(10) %>% select(Country, income ,PercentGrowth)
+```
+What was the percent growth (or decline) in income in 2015 for the United States?
+
+* 1.United States	in year 1942	life was 64.5332	and income	15702	and percent growth	is 0.1860412 in 2015
+We had a 0.18% growth which is not so good.
+```{r include=FALSE}
+gapminder %>% filter(Country =='United States') %>%  mutate(PercentGrowth =
+                  (income - lag(income))/lag(income)) %>% 
+  arrange(-PercentGrowth) %>% head(1)
+
+# We had a 0.18% growth which is not so good.
+```
+
+
+###  income vs year for United States
+```{r include=FALSE}
+df <- gapminder
+dfUSA <- df %>% filter(Country == 'United States') %>% select(income, Year)
+```
+
+```{r echo=FALSE}
+ggplot(data = dfUSA, aes(x = dfUSA$Year, y = dfUSA$income)) + geom_point() +
+  ggtitle("income vs. Year for United States") + xlab("Year") +
+  ylab("income")
+```
+
+* There’s been a steady increase with a few crashes here and there for the income of USA over years.
+
+###  5. Hierarchical Clustering
+```{r include=FALSE}
+set.seed(786)
+gapminder <- read.csv("C:/MyData Late-Spring/506/Project/My Project/gapminder.csv")
+```
+
+```{r include=FALSE}
+str(gapminder)
+```
+
+```{r include=FALSE}
+feature_name <- c('country','year','life_expectancy','population','income','region')
+colnames(gapminder) <- feature_name
+str(gapminder)
+```
+
+
+It's advisable to gather some basic useful information about the dataset like its dimensions, data types and distribution, number of NAs etc. You will do so by using the str(), summary() and is.na() functions in R.
+
+```{r include=FALSE}
+summary(gapminder)
+any(is.na(gapminder))
+```
+
+5.1 Dealing with Missing Values
+
+
+```{r include=FALSE}
+# list rows of data that have missing values 
+gapminder[!complete.cases(gapminder),]
+```
+
+```{r include=FALSE}
+# create new dataset without missing data 
+EDAdata <- na.omit(gapminder)
+```
+
+using Imputation to deal with missing values, used mice method based on random forest to impute.
+
+```{r include=FALSE}
+library(Hmisc)
+library(DMwR)
+library(mice)
+```
+```{r include=FALSE}
+miceMod <- mice(EDAdata[, !names(EDAdata) %in% "medv"], method="rf")  # perform mice imputation, based on random forests.
+miceOutput <- complete(miceMod)  # generate the completed data.
+```
+
+```{r include=FALSE}
+require(data.table)
+library(colorspace)
+library(VIM)
+```
+
+```{r include=FALSE}
+mice_plot <- aggr(EDAdata, col=c('blue','yellow'),
+numbers=TRUE, sortVars=TRUE,
+labels=names(EDAdata), cex.axis=.7,
+gap=3, ylab=c("Missing data","Pattern"))
+```
+
+
+```{r echo=FALSE}
+aggr(EDAdata)
+```
+
+5.2 K-Means Clustering
+
+```{r include=FALSE}
+set.seed(123)
+clusters <- kmeans(EDAdata[,2:3], 5)
+EDAdata$country <- as.factor(clusters$cluster)
+str(clusters)
+```
+
+no missing values
+```{r include=FALSE}
+any(is.na(EDAdata))
+```
+
+```{r include=FALSE}
+# converting all data into numerical to do normalisation.
+Country <- as.numeric(EDAdata$country)
+Year <- as.numeric(EDAdata$year)
+Income <- as.numeric(EDAdata$income)
+life_exp <- as.numeric(EDAdata$life_expectancy)
+Region <- as.numeric((EDAdata$region))
+Population <- as.numeric(EDAdata$population)
+```
+
+
+```{r include=FALSE}
+EDAnew <- data.frame(Year,life_exp,Region,Income,Country,Population)
+```
+
+```{r include=FALSE}
+str(EDAnew)
+```
+
+```{r include=FALSE}
+df <- EDAnew
+df <- na.omit(df) #Remove any missing values
+df <- scale(df)
+k2 <- kmeans(df, centers = 2, nstart = 25)
+str(k2) 
+```
+```{r echo=FALSE}
+fviz_cluster(k2, data = df)
+```
+
+
+```{r include=FALSE}
+# making ggplot for EDA data for life expectancy over region.
+ggplot(EDAnew,
+    aes_string(y=EDAdata$life_expectancy,x=as.factor(EDAdata$region))) +
+    geom_boxplot() + 
+    xlab('life exp') +
+    ylab('Region')
+```
+
+```{r include=FALSE}
+EDAnew_df <- EDAnew %>%
+filter(Year == 2015 & !is.na(life_exp)) %>%
+select( life_exp, Country,Income)
+```
+
+
+```{r include=FALSE}
+Lifexp_df <- as.data.frame(scale(EDAnew_df))
+summary(Lifexp_df)
+```
+
+```{r include=FALSE}
+dist_mat <- dist(Lifexp_df, method = 'euclidean')
+```
+
+### Agglomerative coefficient
+```{r echo=FALSE}
+hclust_avg <- hclust(dist_mat, method = 'complete')
+plot(hclust_avg)
+```
+
+
+```{r include=FALSE}
+cut_avg <- cutree(hclust_avg, k = 3)
+```
+
+
+```{r echo=FALSE}
+plot(hclust_avg)
+rect.hclust(hclust_avg , k = 3, border = 2:6)
+abline(h = 3, col = 'red')
+```
+
+
+```{r include=FALSE}
+suppressPackageStartupMessages(library(dendextend))
+avg_dend_obj <- as.dendrogram(hclust_avg)
+avg_col_dend <- color_branches(avg_dend_obj, h = 3)
+```
+
+```{r echo=FALSE}
+plot(avg_col_dend)
+```
+
+
+### SUMMARY
+
+We found that three high-income countries with the lowest life expectancy were 
+Lesotho life as 48.50, income as 2598, region as Sub-Saharan Africa
+Swaziland life as 51.50,  income as 6095, region as Sub-Saharan Africa
+Guinea-Bissau life as 53.40,income as 1386, region as Sub-Saharan Africa
+
+
+We found that the the 3 countries with the longest life expectancies and United States
+
+Andorra life as 84.1, income as 46577, region Europe & Central Asia, rank 1,
+Japan life 83.5,income as 36162, region East Asia & Pacific, rank 2,
+Switzerland life 82.9, income as 56118, region Europe & Central Asia, rank 3,
+and lastly for United States life 79.1, income as 53354, region America, rank 36
+
+Europe and Central Asia 's life expectancy is substantially higher than all continents. Asia is also VERY spread out with a few countries at the top of our distribution.
+
+we saw the graph for high income countries with low life expectancies and saw that zimbabwe , zambia,swaziland,south sudan etc are in the list.
+
+we saw that Life expectancy improved over years especially after 1950.
+
+we saw that in the year 2015, the top 3 countries with the largest income were
+
+were Qatar with income as 132877,
+Luxembourg with income as 88314,
+Kuwait with income as 82633
+
+
+we saw that the percent growth (or decline) in income in 2015 for the top 3 countries with largest income
+were Kuwait  with income 82633  and Percent Growth  as  44.30318,
+     Singapore  with income 80794 and Percent Growth as 37.75012,
+     Malaysia  with income 24320 and Percent Growth as 29.43805
+
+we also saw that the percent growth (or decline) in income in 2015 for the United States was 0.18% which is not so good.
+There’s been a steady increase with a few crashes here and there for the income of USA over years
+
+### References
+
+1. https://www.r-project.org/help.html
+2. https://www.rdocumentation.org
+
